@@ -15,7 +15,7 @@ currently only tested on json like
 ``` 
 you might need to edit some of the logic for different structure.
 
-### example
+#### example using 50 max_length
 ![image](https://github.com/user-attachments/assets/73c07934-786a-4a4b-989c-0322409361c1)
 
 regular textsplit version soon.
