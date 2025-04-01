@@ -1,0 +1,75 @@
+$nomention
+$var[max_length;499] $c[per variable]
+$var[var_count;4]
+
+$var[full_var;$getChannelVar[var1]$getChannelVar[var2]$getChannelVar[var3]$getChannelVar[var4]]
+$var[old_length;$charCount[$var[full_var]]]
+$c[debug]
+$sendMessage[`$var[full_var]`]
+
+$c[attempts to read saved json]
+$try 
+  $jsonParse[$var[full_var]]
+$catch
+  $jsonParse[{$var[full_var]}]
+$endtry
+
+$c[example input]
+$if[$message!=]
+  $jsonSet[$getTimestamp;data;$message]
+  $var[full_var;$jsonStringify]
+$endif
+
+$c[excess character count]
+$var[exceed;$sub[$charCount[$var[full_var]];$multi[$var[max_length];$var[var_count]]]]
+
+$if[$var[exceed]>0]
+  $c[crop beginning by exceed]
+  $var[full_var;$replaceText[$var[full_var];$cropText[$var[full_var];$var[exceed];];;1]]
+
+  $c[attempts to fix json. if this returns an error, that's probably because your json structure is different. change the logic to handle your format]	
+  $try
+    $jsonParse[{$var[full_var]]
+  $catch
+    $textSplit[$var[full_var];},"]
+    $removeSplitTextElement[1]
+    
+    $var[full_var;{"$joinSplitText[},"]]
+  $endtry
+$endif
+
+$c[splits json into 4 variables. follows the same pattern for more variables]
+$var[var1;$cropText[$var[full_var];$var[max_length];]]
+$var[var2;$cropText[$replaceText[$var[full_var];$var[var1];;1];$var[max_length];]]
+$var[var3;$cropText[$replaceText[$var[full_var];$var[var1]$var[var2];;1];$var[max_length];]]
+$var[var4;$cropText[$replaceText[$var[full_var];$var[var1]$var[var2]$var[var3];;1];$var[max_length];]]
+
+$c[debug]
+$textSplit[/$charCount[$var[var1]]/$charCount[$var[var2]]/$charCount[$var[var3]]/$charCount[$var[var4]];/0]
+$sendMessage[```
+total        : $var[old_length] -> $charCount[$var[full_var]]
+max          : $multi[$var[max_length];$var[var_count]]
+exceed       : $var[exceed]
+split        : $var[max_length]
+vars         : $var[var_count]
+vars used    : $calculate[$var[var_count]+1-$getTextSplitLength]
+distribution : $joinSplitText[/0]
+```]
+
+**res**
+`$var[var1]$var[var2]$var[var3]$var[var4]`
+
+$try
+  $jsonParse[$var[var1]$var[var2]$var[var3]$var[var4]]
+  $c[failproof based on length. adjust the value by yourself]
+  $if[$charCount[$var[full_var]]>5]
+    $setChannelVar[var1;$var[var1]]
+    $setChannelVar[var2;$var[var2]]
+    $setChannelVar[var3;$var[var3]]
+    $setChannelVar[var4;$var[var4]]
+  $else 
+    intentionally not saved because the json is unexpectedly short, but there's no errors. figure out why
+  $endif
+$catch
+  json is broken somewhere: $error[message]
+$endtry
